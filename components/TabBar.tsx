@@ -1,10 +1,39 @@
-import { StyleSheet, View } from 'react-native';
+import { useState } from 'react';
+import { LayoutChangeEvent, StyleSheet, View } from 'react-native';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import TabBarButton from './TabBarButton';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 
 function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
+  const [dimensions, setDimensions] = useState({ height: 20, width: 100 });
+
+  const buttonWidth = dimensions.width / state.routes.length;
+
+  const onTabbarLayout = (e: LayoutChangeEvent) => {
+    setDimensions({
+      height: e.nativeEvent.layout.height,
+      width: e.nativeEvent.layout.width
+    })
+  }
+
+  const tabPositionX = useSharedValue(0);
+
+  const animatedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ translateX: tabPositionX.value }]
+    }
+  }) 
+
   return (
-    <View style={styles.tabbar}>
+    <View onLayout={onTabbarLayout} style={styles.tabbar}>
+      <Animated.View style={[animatedStyle, {
+        position: "absolute",
+        backgroundColor: "#723FEB",
+        borderRadius: 40,
+        marginHorizontal: 12,
+        height: dimensions.height - 20,
+        width: buttonWidth - 25
+      }]} />
       {state.routes.map((route, index) => {
         const { options } = descriptors[route.key];
         const label =
@@ -17,6 +46,7 @@ function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
         const isFocused = state.index === index;
 
         const onPress = () => {
+          tabPositionX.value = withSpring(buttonWidth * index, { duration: 1500 })
           const event = navigation.emit({
             type: 'tabPress',
             target: route.key,
@@ -42,7 +72,7 @@ function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
             onLongPress={onLongPress}
             isFocused={isFocused}
             routeName={route.name}
-            color={isFocused ? "#673AB7" : "#687076"}
+            color={isFocused ? "#FFF" : "#687076"}
             label={label}
           />
         )
